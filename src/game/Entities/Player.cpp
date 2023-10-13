@@ -3603,6 +3603,9 @@ void Player::learnSpell(uint32 spell_id, bool dependent, bool talent)
         WorldPacket data(SMSG_LEARNED_SPELL, 4);
         data << uint32(spell_id);
         GetSession()->SendPacket(data);
+#ifdef BUILD_ELUNA
+        sEluna->OnLearnSpell(this, spell_id);
+#endif
     }
 
     // learn all disabled higher ranks (recursive) - skip for talent spells
@@ -7036,6 +7039,9 @@ uint32 Player::GetLevelFromDB(ObjectGuid guid)
 
 void Player::UpdateArea(uint32 newArea)
 {
+#ifdef BUILD_ELUNA
+    uint32 oldArea = m_areaUpdateId;
+#endif
     m_areaUpdateId    = newArea;
 
     AreaTableEntry const* area = GetAreaEntryByAreaID(newArea);
@@ -7056,6 +7062,12 @@ void Player::UpdateArea(uint32 newArea)
     }
 
     UpdateAreaDependentAuras();
+
+#ifdef BUILD_ELUNA
+    // We only want the hook to trigger when the old and new area is actually different
+    if (oldArea != newArea)
+        sEluna->OnUpdateArea(this, oldArea, newArea);
+#endif
 }
 
 bool Player::CanUseCapturePoint() const
@@ -10407,6 +10419,10 @@ Item* Player::StoreNewItem(ItemPosCountVec const& dest, uint32 item, bool update
     {
         ItemAddedQuestCheck(item, count);
         pItem = StoreItem(dest, pItem, update);
+
+#ifdef BUILD_ELUNA
+        sEluna->OnAdd(this, pItem);
+#endif
     }
     return pItem;
 }
@@ -14196,6 +14212,10 @@ void Player::SetQuestStatus(uint32 quest_id, QuestStatus status)
     }
 
     UpdateForQuestWorldObjects();
+
+#ifdef BUILD_ELUNA
+    sEluna->OnQuestStatusChanged(this, quest_id, status);
+#endif
 }
 
 // not used in MaNGOS, but used in scripting code
